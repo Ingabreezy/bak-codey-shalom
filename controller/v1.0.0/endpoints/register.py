@@ -9,3 +9,7 @@ router = APIRouter(prefix="/api/register")
 @router.get("")
 def test():
     return {"hello": "hello"}
+
+
+@router.post("/database", status_code=HTTP_201success)
+def register_database(Database
