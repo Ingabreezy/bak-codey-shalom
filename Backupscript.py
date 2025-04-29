@@ -1,39 +1,74 @@
+# This script handles taking a new backup as well Cleaning old backups (oldest one if count >= 3)
+
 #!/usr/bin/env python3
 
-import sys
 import os
+import sys
 import subprocess
 from datetime import datetime
 
-def main():
-    if len(sys.argv) != 3:
-        print("Usage: bak_rsync.py <container_name> <volume_name>")
-        sys.exit(1)
+# Settings
+source_dir = "/var/lib/docker/volumes"
+backup_root = "/backup/snapshots"
+previous_versions_dir = "/backup/previous_versions"
+last_snapshot_record = "/backup/last_snapshot.txt"
+max_snapshots = 3  # Number of snapshots to keep before deleting oldest
 
-    container = sys.argv[1]
-    volume = sys.argv[2]
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    backup_dir = f"/backup/{volume}_{timestamp}"
+# Create necessary directories if not exist
+os.makedirs(backup_root, exist_ok=True)
+os.makedirs(previous_versions_dir, exist_ok=True)
 
-    # Create the backup directory
-    os.makedirs(backup_dir, exist_ok=True)
+def take_snapshot():
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    new_backup_path = os.path.join(backup_root, current_time)
 
-    # Construct the docker command
-    docker_cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{volume}:/data",
-        "-v", f"{backup_dir}:/backup",
-        "alpine",
-        "sh", "-c", "cd /data && tar czf /backup/backup.tar.gz ."
+    # Check if previous snapshot exists for hard-linking
+    if os.path.exists(last_snapshot_record):
+        with open(last_snapshot_record, 'r') as f:
+            previous_snapshot_path = f.read().strip()
+        link_dest_option = f"--link-dest={previous_snapshot_path}"
+    else:
+        link_dest_option = None
+
+    os.makedirs(new_backup_path, exist_ok=True)
+
+    rsync_command = [
+        "rsync", "-a", "--delete", "--backup",
+        f"--backup-dir={previous_versions_dir}/{current_time}"
     ]
 
+    if link_dest_option:
+        rsync_command.append(link_dest_option)
+
+    rsync_command += [f"{source_dir}/", f"{new_backup_path}/"]
+
     try:
-        # Run the docker command
-        subprocess.run(docker_cmd, check=True)
-        print(f"Backup for {volume} completed at {backup_dir}")
+        subprocess.run(rsync_command, check=True)
+        with open(last_snapshot_record, 'w') as f:
+            f.write(new_backup_path)
+        print(f"Snapshot taken successfully at {new_backup_path}")
     except subprocess.CalledProcessError as e:
-        print(f"Error during backup: {e}")
+        print(f"Snapshot failed: {e}")
         sys.exit(1)
+
+def cleanup_old_snapshots():
+    snapshots = sorted(os.listdir(backup_root))
+
+    if len(snapshots) >= max_snapshots:
+        oldest_snapshot = snapshots[0]
+        oldest_snapshot_path = os.path.join(backup_root, oldest_snapshot)
+        try:
+            subprocess.run(["rm", "-rf", oldest_snapshot_path], check=True)
+            print(f"Deleted oldest snapshot: {oldest_snapshot_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to delete oldest snapshot: {e}")
+            sys.exit(1)
+    else:
+        print(f"No need to delete snapshots. Current count: {len(snapshots)}")
+
+def main():
+    take_snapshot()
+    cleanup_old_snapshots()
 
 if __name__ == "__main__":
     main()
