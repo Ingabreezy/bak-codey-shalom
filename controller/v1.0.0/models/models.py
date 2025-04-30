@@ -3,13 +3,19 @@ from enum import Enum
 from typing import Optional
 
 # Enum for Database Types
-class DbType(Enum):
+class DbType(str, Enum):
     POSTGRES = "postgres"
     MYSQL = "mysql"
     MSSQL = "msql"
     MONGO = "mongo"
     SQLITE = "sqlite"
     MARIA = "maria"
+
+# Policy
+class Policy(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
 
 # Containers
 class Container(SQLModel, table=True):
@@ -24,10 +30,18 @@ class Container(SQLModel, table=True):
 class Database(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     database_name: str
-    database_type: DbType
+    database_type: DbType  # Using Enum
     version: Optional[str] = None
     primary_replica: Optional[str] = None
     container_id: int = Field(foreign_key="container.id")
+
+    # Ensure proper conversion of Enum values to strings and vice-versa
+    @classmethod
+    def from_orm(cls, orm_instance):
+        instance = super().from_orm(orm_instance)
+        # Ensure the enum is stored as a string
+        instance.database_type = str(instance.database_type)
+        return instance
 
 # Backups
 class Backup(SQLModel, table=True):
