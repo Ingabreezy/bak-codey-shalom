@@ -10,9 +10,9 @@ from email_notify import send_email  # Make sure this file exists!
 
 # Settings
 source_dir = "/var/lib/docker/volumes"
-backup_root = "/backup/snapshots"
-previous_versions_dir = "/backup/previous_versions"
-last_snapshot_record = "/backup/last_snapshot.txt"
+backup_root = "/home/susmitha/backup/snapshots"
+previous_versions_dir = "/home/susmitha/backup/previous_versions"
+last_snapshot_record = "/home/susmitha/backup/last_snapshot.txt"
 max_snapshots = 3  # Number of snapshots to keep before deleting oldest
 
 # Create necessary directories if they do not exist
