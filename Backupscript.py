@@ -62,9 +62,9 @@ def cleanup_old_snapshots():
         oldest_snapshot_path = os.path.join(backup_root, oldest_snapshot)
         try:
             subprocess.run(["rm", "-rf", oldest_snapshot_path], check=True)
-            print(f"🗑️ Deleted oldest snapshot: {oldest_snapshot_path}")
+            print(f"Deleted oldest snapshot: {oldest_snapshot_path}")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to delete oldest snapshot: {e}")
+            print(f"Failed to delete oldest snapshot: {e}")
             sys.exit(1)
     else:
         print(f"No need to delete snapshots. Current count: {len(snapshots)}")
