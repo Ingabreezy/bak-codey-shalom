@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
-# This script handles taking a new backup and cleaning old backups (oldest one if count >= 3)
+# Updated backup script using user-space directories (no sudo required)
 
 import os
 import sys
 import subprocess
 from datetime import datetime
-from email_notify import send_email  # Make sure this file exists!
+from email_notify import send_email  # Make sure this file is in the same directory
 
-# Settings
-source_dir = "/var/lib/docker/volumes"
-backup_root = "/home/susmitha/backup/snapshots"
-previous_versions_dir = "/home/susmitha/backup/previous_versions"
-last_snapshot_record = "/home/susmitha/backup/last_snapshot.txt"
+# Settings (updated to use home directory)
+home_dir = os.path.expanduser("~")
+source_dir = os.path.join(home_dir, "testdata")  # Change this if needed
+backup_root = os.path.join(home_dir, "backup", "snapshots")
+previous_versions_dir = os.path.join(home_dir, "backup", "previous_versions")
+last_snapshot_record = os.path.join(home_dir, "backup", "last_snapshot.txt")
 max_snapshots = 3  # Number of snapshots to keep before deleting oldest
 
 # Create necessary directories if they do not exist
@@ -37,7 +38,7 @@ def take_snapshot():
     # Build rsync command
     rsync_command = [
         "rsync", "-a", "--delete", "--backup",
-        f"--backup-dir={previous_versions_dir}/{current_time}"
+        f"--backup-dir={os.path.join(previous_versions_dir, current_time)}"
     ]
 
     if link_dest_option:
