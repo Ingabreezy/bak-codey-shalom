@@ -7,7 +7,7 @@ import sys
 import shutil
 import subprocess
 from datetime import datetime
-from email_notify import send_email  # Ensure this module is in the same directory
+from emailnotify import send_email # Ensure this module is in the same directory
 
 # Settings
 home_dir = os.path.expanduser("~")
