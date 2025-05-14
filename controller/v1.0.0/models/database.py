@@ -1,20 +1,19 @@
-from sqlmodel import Field, SQLModel
-from enum import Enum
+from sqlmodel import Field, SQLModel, create_engine, Session
+from models import DbType, Container, Database, Backup, BackupPolicy, Rollback, Policy  # Import all models from models
 
-class DbType(Enum):
-    Postgres = "postgres"
-    MySQL = "mysql"
-    MSSQL = "mssql"
-    Mongo = "monogo"
-    Sqlite = "slqite"
-    Maria = "maria"
+# SQLite URL and connection arguments
+sqlite_url = "sqlite:///database.db"
+connection_args = {"check_same_thread": False}
 
-    def IsDbType(dbtype: str) -> bool:
-        return dbtype in DbType._value2member_map_
+# Create engine to interact with the SQLite database
+engine = create_engine(sqlite_url, connect_args=connection_args)
 
-class Database(SQLModel, table=True):
-    db_id: int = Field(primary_key=True)
-    type: DbType
-    port: int
-    user: str   
-    password: str
+# Function to set up the database and create tables
+def setup():
+    SQLModel.metadata.create_all(engine)  # Creates all tables from the models
+
+# Function to get a session for interacting with the database
+def getSession():
+    with Session(engine) as session:
+        yield session
+        
